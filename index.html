@@ -255,6 +255,8 @@ select.inp{padding:0 10px}
 .it.brow{grid-template-columns:28px 1fr auto;padding:14px 0;border-bottom:1px solid var(--line)}
 .it.brow::before{display:none}
 .nt{font-size:13px;color:var(--muted);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
+.nt-tl{-webkit-line-clamp:8;font-size:13.5px;line-height:1.45;margin:3px 0 2px}
+.it.done .nt-tl{opacity:.6}
 .bdg{font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--surface);color:var(--muted);white-space:nowrap;margin-top:2px}
 .bdg.late{background:var(--danger);color:#fff}
 .bdg.now{background:var(--accent-soft);color:var(--fg)}
@@ -640,7 +642,7 @@ function itemRow(it,s,opt={}){
   const mark=it.type==='note'?'':done?ic('check'):'';
   return `<div class="${cls}" ${c?`style="--c:${c}"`:''}>
     <button class="ck" data-act="toggle" data-id="${it.id}" data-date="${s||''}" aria-label="${done?'Bỏ hoàn thành':'Hoàn thành'}: ${esc(it.title)}">${mark}</button>
-    <button class="bd" data-act="open" data-id="${it.id}" data-date="${s||it.date||''}"><div class="tt">${esc(it.title||'(Không tên)')}</div>${meta.length?`<div class="mt">${meta.join('')}</div>`:''}</button></div>`;
+    <button class="bd" data-act="open" data-id="${it.id}" data-date="${s||it.date||''}"><div class="tt">${esc(it.title||'(Không tên)')}</div>${it.notes&&it.type!=='note'?`<div class="nt nt-tl">${esc(it.notes)}</div>`:''}${meta.length?`<div class="mt">${meta.join('')}</div>`:''}</button></div>`;
 }
 const addRow=(label,attrs)=>`<button class="add" data-act="quick" ${attrs}><span class="pl">${ic('plus')}</span><span>${label}</span></button>`;
 
