@@ -99,6 +99,36 @@ main.nocal{padding-bottom:120px}
 .cal .wrap{padding-top:8px}
 .calh{display:flex;justify-content:flex-end;align-items:center;gap:2px;font-size:14px;font-weight:600}
 .calh button{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px}
+.calh .today-l{margin-right:auto;color:var(--accent);font-weight:500}
+#view.sl-l{animation:slL .24s cubic-bezier(.2,.7,.2,1)}
+#view.sl-r{animation:slR .24s cubic-bezier(.2,.7,.2,1)}
+@keyframes slL{from{transform:translateX(48px);opacity:.2}}
+@keyframes slR{from{transform:translateX(-48px);opacity:.2}}
+main{touch-action:pan-y}
+.dayempty{padding:56px 16px}
+/* xem theo giờ */
+.hv-all{display:flex;gap:8px;align-items:flex-start;padding:6px 0 12px;border-bottom:1px solid var(--line)}
+.hv-l{width:44px;flex:none;font-size:12px;color:var(--muted);padding-top:7px;text-align:right}
+.hv-allc{flex:1;display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.hv-chip{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:6px 10px;border-radius:9px;background:var(--surface);border-left:3px solid var(--c);font-size:13px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hv-chip.done{opacity:.55;text-decoration:line-through}
+.hv-chip svg.i{width:14px;height:14px}
+.hv-add{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);padding:6px 6px}
+.hv-add svg.i{width:14px;height:14px}
+.hv-grid{position:relative;margin-top:14px}
+.hv-row{position:absolute;left:0;right:0;height:56px;display:block}
+.hv-row::after{content:"";position:absolute;left:52px;right:0;top:0;border-top:1px solid var(--line)}
+.hv-row:active{background:var(--surface)}
+.hv-row span{position:absolute;left:0;top:-8px;width:44px;text-align:right;font-size:11px;color:var(--muted)}
+.hv-ev{position:absolute;z-index:2;border-radius:8px;background:var(--surface);background:color-mix(in srgb,var(--c) 20%,var(--bg));border-left:3px solid var(--c);padding:3px 8px;text-align:left;overflow:hidden;display:flex;flex-direction:column;gap:1px;font-size:11px}
+.hv-ev b{flex:none;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hv-ev span{color:var(--muted);flex:none;white-space:nowrap}
+.hv-ev.short{flex-direction:row;align-items:center;gap:6px}
+.hv-ev.short b{flex:0 1 auto;min-width:0}
+.hv-ev.done{opacity:.5}
+.hv-ev.done b{text-decoration:line-through}
+.hv-now{position:absolute;left:48px;right:0;height:2px;background:var(--danger);z-index:3;pointer-events:none}
+.hv-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
 .week,.month{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .wl{font-size:12px;color:var(--muted);padding:2px 0}
 .dd{display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px 0 4px}
@@ -622,7 +652,7 @@ function itemFromParsed(p,ctx={}){
 }
 
 /* ---------- trạng thái giao diện ---------- */
-const ui={view:'timeline',anchor:today(),calOpen:false,month:today().slice(0,7),project:(()=>{try{return localStorage.getItem('machngay.board')||null}catch(e){return null}})(),tag:null,q:'',showOver:false};
+const ui={view:'timeline',anchor:today(),dayMode:(()=>{try{return localStorage.getItem('machngay.daymode')||'list'}catch(e){return 'list'}})(),hvScroll:true,calOpen:false,month:today().slice(0,7),project:(()=>{try{return localStorage.getItem('machngay.board')||null}catch(e){return null}})(),tag:null,q:'',showOver:false};
 function go(view,extra={}){Object.assign(ui,{view},extra);if(view!=='themes')themePreview=null;closeSheet();render();window.scrollTo(0,0)}
 
 /* ---------- dòng việc ---------- */
@@ -741,32 +771,49 @@ const axisChips=(cur,act,label)=>`<div class="f"><span class="fl">${label}</span
 /* ---------- các màn hình ---------- */
 function vTimeline(){
   const t=today(), a=ui.anchor, st=settings();
-  let h='';
-  const od=overdue(), un=unplanned();
-  for(let i=0;i<21;i++){
-    const s=addD(a,i);
-    let its=itemsOn(s).sort(sortDay);
-    if(st.hideDone)its=its.filter(x=>!isDone(x,s));
-    if(i>1&&!its.length)continue;
-    if(i===0){
-      h+=`<div class="dline">${esc(fmtLong(s))}</div><div class="hero">${esc(relDay(s))}</div>`;
-      if(s===t){
-        const todo=itemsOn(t).filter(x=>x.type!=='note'&&!isDone(x,t)).length;
-        h+=`<div class="tiles"><div class="tile"><b class="tnum">${todo}</b><span>Cần làm</span></div>
-          <button class="tile${od.length?' warn':''}${ui.showOver?' on':''}" data-act="showover"><b class="tnum">${od.length}</b><span>Quá hạn</span></button>
-          <button class="tile" data-act="nav" data-v="unplanned"><b class="tnum">${un.length}</b><span>Chưa xếp</span></button></div>`;
-        if(ui.showOver&&od.length)h+=`<div class="day"><div class="sect">Quá hạn</div><div class="tl">${od.sort((x,y)=>x.date.localeCompare(y.date)).map(x=>itemRow(x,x.date,{overdue:true})).join('')}</div>
-          <button class="btn sm" data-act="overnow" style="margin-top:6px">Dời tất cả sang hôm nay</button></div>`;
-      }
-      h+=`<div class="day"><div class="tl">${its.map(x=>itemRow(x,s)).join('')}${addRow(s===t?'Thêm việc cho hôm nay':'Thêm việc',`data-date="${s}"`)}</div></div>`;
-      if(st.eod&&s<=t)h+=eodCard(s);
-      continue;
-    }
-    h+=`<div class="day"><div class="dh">${esc(fmtShort(s))}${i===1&&s===addD(t,1)?'<span class="rel">· Ngày mai</span>':''}</div><div class="tl">${its.map(x=>itemRow(x,s)).join('')}${addRow('Thêm việc',`data-date="${s}"`)}</div></div>`;
+  /* mỗi trang là một ngày; vuốt ngang để đổi ngày */
+  const s=a;
+  let its=itemsOn(s).sort(sortDay);
+  if(st.hideDone)its=its.filter(x=>!isDone(x,s));
+  let h=`<div class="dline">${esc(fmtLong(s))}</div>`;
+  const rel=relDay(s);
+  if(rel!==fmtShort(s))h+=`<div class="hero">${esc(rel)}</div>`;
+  if(s===t){
+    const od=overdue(), un=unplanned();
+    const todo=itemsOn(t).filter(x=>x.type!=='note'&&!isDone(x,t)).length;
+    h+=`<div class="tiles"><div class="tile"><b class="tnum">${todo}</b><span>Cần làm</span></div>
+      <button class="tile${od.length?' warn':''}${ui.showOver?' on':''}" data-act="showover"><b class="tnum">${od.length}</b><span>Quá hạn</span></button>
+      <button class="tile" data-act="nav" data-v="unplanned"><b class="tnum">${un.length}</b><span>Chưa xếp</span></button></div>`;
+    if(ui.showOver&&od.length)h+=`<div class="day"><div class="sect">Quá hạn</div><div class="tl">${od.sort((x,y)=>x.date.localeCompare(y.date)).map(x=>itemRow(x,x.date,{overdue:true})).join('')}</div>
+      <button class="btn sm" data-act="overnow" style="margin-top:6px">Dời tất cả sang hôm nay</button></div>`;
   }
+  if(ui.dayMode==='hours')h+=hoursView(s,its);
+  else if(!its.length&&s!==t)h+=`<div class="empty dayempty"><b>Chưa có kế hoạch nào</b>Bạn có muốn thêm vài việc cần làm không?<br><br><button class="btn primary" data-act="quick" data-date="${s}">${ic('plus')}Thêm việc</button></div>`;
+  else h+=`<div class="day"><div class="tl">${its.map(x=>itemRow(x,s)).join('')}${addRow(s===t?'Thêm việc cho hôm nay':'Thêm việc',`data-date="${s}"`)}</div></div>`;
+  if(st.eod&&s<=t&&ui.dayMode!=='hours'&&its.length)h+=eodCard(s);
   if(!S.docs.size&&(S.ready||S.mode==='local-only'))h+=`<div class="empty"><b>Bắt đầu một ngày gọn gàng</b>Nhấn + rồi gõ tự nhiên, ví dụ <code>Họp nhóm 9h-10h mai</code> hoặc <code>Đọc 10 trang sách mỗi ngày 21h</code>.</div>`;
   return h;
 }
+/* xem theo giờ: mục Cả ngày + lưới 24 giờ, việc chồng giờ xếp cạnh nhau */
+const HPX=56;
+function hoursView(s,its){
+  const toMin=hm=>{const [a,b]=String(hm).split(':').map(Number);return (a||0)*60+(b||0)};
+  const allday=its.filter(x=>!x.time),timed=its.filter(x=>x.time);
+  const chip=x=>{const done=isDone(x,s);return `<button class="hv-chip${done?' done':''}" style="--c:${colorOf(x)||'var(--accent)'}" data-act="open" data-id="${x.id}" data-date="${s}">${done?ic('check'):''}${esc(x.title||'(Không tên)')}</button>`};
+  let h=`<div class="hv"><div class="hv-all"><span class="hv-l">Cả ngày</span><div class="hv-allc">${allday.map(chip).join('')}<button class="hv-add" data-act="quick" data-date="${s}">${ic('plus')}Thêm</button></div></div>`;
+  const ev=timed.map(x=>{const st=toMin(x.time);let en=x.end?toMin(x.end):st+30;if(en<=st)en=st+30;return {x,st,en:Math.min(en,1440)}}).sort((a,b)=>a.st-b.st||b.en-a.en);
+  const out=[];let lanes=[],cl=[],clEnd=-1;
+  const flush=()=>{const n=Math.max(1,...cl.map(c=>c.lane+1));cl.forEach(c=>{c.n=n;out.push(c)});cl=[];lanes=[];clEnd=-1};
+  for(const e of ev){if(cl.length&&e.st>=clEnd)flush();let lane=lanes.findIndex(v=>v<=e.st);if(lane<0){lane=lanes.length;lanes.push(e.en)}else lanes[lane]=e.en;e.lane=lane;cl.push(e);clEnd=Math.max(clEnd,e.en)}
+  if(cl.length)flush();
+  h+=`<div class="hv-grid" style="height:${24*HPX}px">`;
+  for(let i=0;i<24;i++)h+=`<button class="hv-row" style="top:${i*HPX}px" data-act="slot" data-date="${s}" data-h="${i}" aria-label="Thêm việc lúc ${i}:00"><span>${i}:00</span></button>`;
+  for(const e of out){const done=isDone(e.x,s),c=colorOf(e.x)||'var(--accent)',ht=Math.max(26,(e.en-e.st)/60*HPX-2);
+    h+=`<button class="hv-ev${done?' done':''}${ht<44?' short':''}" style="top:${e.st/60*HPX+1}px;height:${ht}px;left:calc(52px + (100% - 52px) / ${e.n} * ${e.lane});width:calc((100% - 52px) / ${e.n} - 3px);--c:${c}" data-act="open" data-id="${e.x.id}" data-date="${s}"><b>${esc(e.x.title||'(Không tên)')}</b><span>${esc(e.x.time)}${e.x.end?'–'+esc(e.x.end):''}</span></button>`}
+  if(s===today()){const n=new Date();h+=`<div class="hv-now" style="top:${(n.getHours()*60+n.getMinutes())/60*HPX}px"></div>`}
+  return h+'</div></div>';
+}
+function shiftDay(n){ui.slide=n>0?'l':'r';ui.anchor=addD(ui.anchor,n);ui.month=ui.anchor.slice(0,7);ui.hvScroll=true;ui.showOver=false;render();if(ui.dayMode!=='hours')window.scrollTo(0,0)}
 function vUnplanned(){
   const its=all('item').filter(x=>!x.date&&!x.projectId&&x.type!=='note');
   const open=its.filter(x=>!x.done).sort((a,b)=>(b.priority||0)-(a.priority||0)||(b.createdAt||0)-(a.createdAt||0)), done=its.filter(x=>x.done);
@@ -900,7 +947,7 @@ const TITLES={themes:'Chọn giao diện',timeline:'Mạch Ngày',board:'Bảng'
 /* ---------- khung: thanh dưới, lịch tuần ---------- */
 function weekCal(){
   const st=settings(), a=ui.anchor, t=today();
-  const head=`<div class="calh"><button data-act="calopen" aria-expanded="${ui.calOpen}">Tháng ${+ui.month.slice(5,7)} ${ui.month.slice(0,4)} ${ic(ui.calOpen?'down':'up')}</button></div>`;
+  const head=`<div class="calh">${a!==t?`<button class="today-l" data-act="pick" data-date="${t}">Hôm nay</button>`:''}<button data-act="calopen" aria-expanded="${ui.calOpen}">Tháng ${+ui.month.slice(5,7)} ${ui.month.slice(0,4)} ${ic(ui.calOpen?'down':'up')}</button></div>`;
   const labels=Array.from({length:7},(_,i)=>`<div class="wl">${WD[(st.weekStart+i)%7]}</div>`).join('');
   const cell=(s,out)=>{const n=itemsOn(s).filter(x=>x.type!=='note'&&!isDone(x,s)).length;return `<button class="dd${s===a?' on':''}${s===t?' today':''}${out?' out':''}" data-act="pick" data-date="${s}" aria-label="${esc(fmtLong(s))}"><b class="tnum">${pd(s).getDate()}</b><i class="${n?'':'no'}"></i></button>`};
   if(!ui.calOpen){const d=pd(a).getDay();const start=addD(a,-((d-st.weekStart+7)%7));
@@ -913,7 +960,7 @@ function renderChrome(){
   const st=settings();
   const bp=(ui.view==='board'||ui.view==='project')&&boardSel();
   $('#ttl').innerHTML=bp?`<span class="tdot" style="--c:${bp.color}"></span>${esc(bp.name)}`:esc(TITLES[ui.view]||'Mạch Ngày');
-  $('#hdr').innerHTML=`<span style="display:flex">${ui.view==='timeline'&&ui.anchor!==today()?`<button class="btn sm" data-act="pick" data-date="${today()}" style="margin-right:4px">Hôm nay</button>`:''}<button class="ib" data-act="nav" data-v="search" aria-label="Tìm kiếm">${ic('search')}</button><button class="ib" data-act="more" aria-label="Thêm">${ic('more')}</button></span>`;
+  $('#hdr').innerHTML=`<span style="display:flex"><button class="ib" data-act="nav" data-v="search" aria-label="Tìm kiếm">${ic('search')}</button>${ui.view==='timeline'?`<button class="ib" data-act="daymode" aria-label="${ui.dayMode==='hours'?'Xem dạng danh sách':'Xem theo giờ'}" title="${ui.dayMode==='hours'?'Xem dạng danh sách':'Xem theo giờ'}">${ic(ui.dayMode==='hours'?'list':'clock')}</button>`:''}<button class="ib" data-act="more" aria-label="Thêm">${ic('more')}</button></span>`;
   const tabs=[['timeline','Lịch trình','timeline'],...st.tabs.filter(k=>TABDEF[k]).map(k=>[k,TABDEF[k][0],TABDEF[k][1]]),['more','Khác','bag']];
   const on=v=>ui.view===v||(v==='board'&&ui.view==='project');
   const moreOn=!tabs.some(([v])=>v!=='more'&&on(v));
@@ -965,6 +1012,10 @@ function render(){
   $('#view').innerHTML=(VIEWS[ui.view]||vTimeline)();
   renderChrome(); setSync(); animSevens(); syncEod();
   {const c=$('#pchips'),o=c&&c.querySelector('.on');if(o)c.scrollLeft=o.offsetLeft-(c.clientWidth-o.offsetWidth)/2}
+  if(ui.slide){const v=$('#view');v.classList.remove('sl-l','sl-r');void v.offsetWidth;v.classList.add('sl-'+ui.slide);ui.slide=null}
+  if(ui.hvScroll&&ui.view==='timeline'&&ui.dayMode==='hours'){ui.hvScroll=false;const g=$('.hv-grid');if(g){
+    let hr=7;if(ui.anchor===today())hr=Math.max(0,new Date().getHours()-1);else{const f=g.querySelector('.hv-ev');if(f)hr=Math.max(0,Math.floor(parseFloat(f.style.top)/HPX)-1)}
+    requestAnimationFrame(()=>window.scrollTo(0,g.getBoundingClientRect().top+window.scrollY+hr*HPX-90))}}
   pushNative();
   if(aeId){const el=document.getElementById(aeId);if(el){el.focus();try{if(ss!=null)el.setSelectionRange(ss,ss)}catch(e){}}}
 }
@@ -1132,7 +1183,9 @@ const A={
   open:e=>{const it=get(e.dataset.id);if(it)openEditor(it.id,{},e.dataset.date||it.date||null)},
   showover:()=>{ui.showOver=!ui.showOver;render()},
   overnow:()=>{const od=overdue();for(const it of od){const x=cp(it);x.date=today();x.moved=(x.moved||0)+1;put(x,true)}ui.showOver=false;render();toast(`Đã dời ${od.length} việc sang hôm nay`)},
-  pick:e=>{ui.anchor=e.dataset.date;ui.month=ui.anchor.slice(0,7);if(ui.view!=='timeline')ui.view='timeline';render();window.scrollTo(0,0)},
+  pick:e=>{const nd=e.dataset.date;if(ui.view==='timeline'&&nd!==ui.anchor)ui.slide=nd>ui.anchor?'l':'r';ui.anchor=nd;ui.month=ui.anchor.slice(0,7);ui.hvScroll=true;ui.showOver=false;if(ui.view!=='timeline')ui.view='timeline';render();if(ui.dayMode!=='hours')window.scrollTo(0,0)},
+  daymode:()=>{ui.dayMode=ui.dayMode==='hours'?'list':'hours';try{localStorage.setItem('machngay.daymode',ui.dayMode)}catch(e){}ui.hvScroll=true;render();if(ui.dayMode!=='hours')window.scrollTo(0,0)},
+  slot:e=>openEditor(null,{date:e.dataset.date,time:pad(+e.dataset.h)+':00'}),
   calopen:()=>{ui.calOpen=!ui.calOpen;ui.month=ui.anchor.slice(0,7);renderChrome()},
   mon:e=>{const [y,m]=ui.month.split('-').map(Number);ui.month=ds(new Date(y,m-1+(+e.dataset.n),1)).slice(0,7);renderChrome()},
   openproj:e=>go('board',{project:e.dataset.id}),
@@ -1225,7 +1278,19 @@ document.addEventListener('keydown',ev=>{
   if(ev.key==='n'||ev.key==='N'){ev.preventDefault();openQuick(quickCtx())}
   else if(ev.key==='/'){ev.preventDefault();go('search');setTimeout(()=>$('#q')&&$('#q').focus(),20)}
   else if(ev.key==='t'){go('timeline',{anchor:today()})}
+  else if((ev.key==='ArrowLeft'||ev.key==='ArrowRight')&&ui.view==='timeline'){ev.preventDefault();shiftDay(ev.key==='ArrowRight'?1:-1)}
 });
+/* vuốt ngang: trên nội dung đổi 1 ngày, trên lịch dưới đổi 1 tuần (hoặc 1 tháng khi mở rộng) */
+let swp=null;
+for(const [sel,zone] of [['#main','day'],['#bottom','cal']]){
+  const el=$(sel);
+  el.addEventListener('touchstart',e=>{if(ui.view!=='timeline'||ed||e.touches.length>1||(zone==='cal'&&!e.target.closest('.cal'))){swp=null;return}const p=e.touches[0];swp={x:p.clientX,y:p.clientY,t:Date.now(),zone}},{passive:true});
+  el.addEventListener('touchend',e=>{if(!swp||swp.zone!==zone)return;const p=e.changedTouches[0],dx=p.clientX-swp.x,dy=p.clientY-swp.y,dt=Date.now()-swp.t;swp=null;
+    if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.6||dt>900)return;const dir=dx<0?1:-1;
+    if(zone==='day')shiftDay(dir);
+    else if(ui.calOpen){const [y,m]=ui.month.split('-').map(Number);ui.month=ds(new Date(y,m-1+dir,1)).slice(0,7);renderChrome()}
+    else shiftDay(dir*7)},{passive:true});
+}
 addEventListener('resize',()=>{const b=$('#bottom');if(b)$('#fab').style.bottom=(b.offsetHeight+14)+'px'});
 
 /* ---------- cầu nối với bản APK: widget màn hình chính, nhắc nhở, thanh trạng thái ---------- */
