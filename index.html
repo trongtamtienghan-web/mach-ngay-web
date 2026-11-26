@@ -390,7 +390,7 @@ async function flush(){
 function put(doc,silent){doc.updatedAt=Date.now();S.docs.set(doc.id,doc);if(S.mode!=='local-only')queue(doc.id,'set',doc);saveLocal();if(!silent)render()}
 function remove(id,silent){S.docs.delete(id);if(S.mode!=='local-only')queue(id,'del');saveLocal();if(!silent)render()}
 /* Đồng bộ qua Firebase (web riêng + APK). Trong artifact của claude.ai vẫn dùng kho của artifact. */
-const FB_CONFIG=null; /* dán cấu hình firebaseConfig của dự án vào đây */
+const FB_CONFIG={apiKey:"AIzaSyAodBaqq4g_XLfDlTPL4QzEQLIvuphYXVs",authDomain:"mach-ngay.firebaseapp.com",projectId:"mach-ngay",storageBucket:"mach-ngay.firebasestorage.app",messagingSenderId:"833730926037",appId:"1:833730926037:web:74ef1fd80e504ea28a595c"};
 const FB_VER='10.14.1';
 const fbHost=()=>!!window.AndroidBridge||/(github\.io|web\.app|firebaseapp\.com|localhost)$/.test(location.hostname);
 function goLocalOnly(){S.mode='local-only';S.fb=false;pending.clear();setSync();migrateHabits();applyWidgetActions();render()}
@@ -1233,7 +1233,8 @@ function pushNative(){if(!AB)return;clearTimeout(nT);nT=setTimeout(()=>{try{
   const t=today(),cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue(n).trim();
   const dark=String(cs.colorScheme||g('color-scheme')).includes('dark');
   const day=s=>({date:s,items:itemsOn(s).filter(x=>x.type!=='note').sort(sortDay).slice(0,40).map(x=>({id:x.id,title:x.title||'(Không tên)',time:x.time?x.time+(x.end?'–'+x.end:''):'',done:isDone(x,s),color:colorOf(x)||''}))});
-  if(AB.widget)AB.widget(JSON.stringify({days:[day(t),day(addD(t,1))],overdue:overdue().length,theme:{bg:g('--bg'),surface:g('--surface'),fg:g('--fg'),muted:g('--muted'),accent:g('--accent'),danger:g('--danger'),line:g('--line'),dark}}));
+  const sc=computeAxes(t).scores;
+  if(AB.widget)AB.widget(JSON.stringify({days:[day(t),day(addD(t,1))],overdue:overdue().length,eod:settings().eod!==false,axesOk:AXES.every(([k])=>sc[k]>=60),theme:{bg:g('--bg'),surface:g('--surface'),fg:g('--fg'),muted:g('--muted'),accent:g('--accent'),danger:g('--danger'),line:g('--line'),dark}}));
   if(AB.setBars)AB.setBars(g('--bg'),g('--nav'),dark);
   if(AB.reminders){const now=Date.now(),list=[];
     for(const it of all('item')){if(!it.reminders||!it.reminders.length)continue;
